@@ -1,241 +1,332 @@
 <!doctype html>
 <html lang="es">
 <head>
-<meta charset="utf-8">
-<title>Configurador WiFi para ESP</title>
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta charset="utf-8" />
+<title>ESP – Instalar firmware & Configurar WiFi</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
 
 <!-- Bootstrap -->
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
 <!-- Bootstrap Icons -->
-<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet" />
+<!-- ESP Web Tools -->
+<script type="module" src="https://unpkg.com/esp-web-tools@9/dist/web/install-button.js?module"></script>
 
 <style>
-    body {
-        background: #0f0b28;
-        color: #fff;
-        font-family: "Segoe UI", sans-serif;
-    }
-
-    /* Ícono WiFi circular */
-    .wifi-icon {
-        width: 90px;
-        height: 90px;
-        border-radius: 50%;
-        background: #1a153f;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin: 0 auto 20px auto;
-        border: 2px solid #322c61;
-    }
-    .wifi-icon i {
-        font-size: 45px;
-        color: #784DFF;
-    }
-
-    .card-custom {
-        background: #181335;
-        border: 1px solid #322c61;
-        border-radius: 18px;
-        padding: 25px;
-    }
-
-    #log {
-        background: #1a153f;
-        padding: 12px;
-        border-radius: 10px;
-        height: 180px;
-        overflow-y: auto;
-        white-space: pre-wrap;
-        border: 1px solid #31285f;
-        font-size: 0.9rem;
-    }
-
-    .btn-main {
-        background: #784DFF;
-        border: none;
-    }
-    .btn-main:hover {
-        background: #6e44f5;
-    }
-
-    .form-control {
-        background: #241c49;
-        border: 1px solid #3b3270;
-        color: #fff;
-    }
-    .form-control:focus {
-        background: #241c49;
-        border-color: #784DFF;
-        color: #fff;
-        box-shadow: 0 0 10px rgba(120, 77, 255, 0.4);
-    }
-
-    .eye-icon {
-        cursor: pointer;
-        user-select: none;
-    }
+  body { background:#0f0b28; color:#fff; font-family:"Segoe UI",sans-serif; }
+  .card-custom{ background:#181335;border:1px solid #322c61;border-radius:18px;padding:25px; }
+  .wifi-icon{ width:90px;height:90px;border-radius:50%;background:#1a153f;display:flex;align-items:center;justify-content:center;margin:0 auto 20px;border:2px solid #322c61;}
+  .wifi-icon i{ font-size:45px;color:#784DFF;}
+  .btn-main{ background:#784DFF;border:none;} .btn-main:hover{ background:#6e44f5;}
+  .form-control{ background:#241c49;border:1px solid #3b3270;color:#fff;}
+  .form-control:focus{ background:#241c49;border-color:#784DFF;color:#fff;box-shadow:0 0 10px rgba(120,77,255,.4);}
+  .eye-icon{ cursor:pointer; user-select:none; }
+  .console{ background:#1a153f;border:1px solid #31285f;border-radius:10px;padding:12px;white-space:pre-wrap;height:180px;overflow:auto;font-size:.9rem; }
+  .progress-wrap{ background:#0f0b28;border:1px solid #31285f;border-radius:10px;padding:10px }
 </style>
 </head>
 
 <body>
+<div class="container py-4">
+  <ul class="nav nav-tabs" role="tablist">
+    <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-flash" type="button">1) Instalar firmware</button></li>
+    <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-wifi"  type="button">2) Conéctate a tu red</button></li>
+  </ul>
 
-<div class="container py-5">
-    <div class="row justify-content-center">
-        <div class="col-lg-5 col-md-7">
+  <div class="tab-content mt-4">
+    <!-- =======================
+         TAB 1: Instalar firmware
+         ======================= -->
+    <div class="tab-pane fade show active" id="tab-flash">
+      <div class="row justify-content-center">
+        <div class="col-lg-7 col-md-9">
+          <div class="card-custom shadow-lg">
+            <div class="wifi-icon"><i class="bi bi-cpu"></i></div>
+            <h4 class="text-center mb-1">Flashear firmware</h4>
+            <p class="text-center text-secondary mb-4">Selecciona tu placa y presiona <b>Instalar</b>. Los binarios están preconfigurados.</p>
 
-            <div class="card-custom text-center shadow-lg">
-
-                <!-- Ícono de WiFi circular -->
-                <div class="wifi-icon">
-                    <i class="bi bi-wifi"></i>
-                </div>
-
-                <h4>Configurador Universal WiFi</h4>
-                <p class="text-secondary">Compatible con ESP32, ESP32-C3 y ESP8266</p>
-
-                <!-- Selector de dispositivo -->
-                <div class="mb-3 text-start">
-                    <label class="form-label">Seleccionar dispositivo</label>
-                    <select id="deviceSelect" class="form-control">
-                        <option value="" selected disabled>Elegir opción…</option>
-                        <option value="esp32">ESP32</option>
-                        <option value="c3">ESP32-C3 Super Mini</option>
-                        <option value="8266">ESP8266</option>
-                    </select>
-                </div>
-
-                <button id="connect" class="btn btn-main w-100 mb-3">
-                    Conectar al dispositivo (Serial)
-                </button>
-
-                <!-- Formulario dinámico -->
-                <div id="formArea"></div>
-
-                <hr class="my-4" style="border-color:#3b3270;">
-
-                <h6 class="text-start">Salida del dispositivo</h6>
-                <div id="log"></div>
+            <div class="mb-3">
+              <label class="form-label">Placa</label>
+              <select id="flashDeviceSelect" class="form-control">
+                <option value="" disabled selected>Elegir…</option>
+                <option value="esp8266">ESP8266</option>
+                <option value="esp32">ESP32</option>
+                <option value="esp32c3">ESP32-C3 Super Mini</option>
+              </select>
             </div>
 
+            <div class="progress-wrap mb-3">
+              <div class="d-flex justify-content-between">
+                <small id="flashStatusLabel" class="text-secondary">Estado: esperando selección…</small>
+                <small id="flashPct" class="text-secondary">0%</small>
+              </div>
+              <div class="progress" role="progressbar" aria-label="Progreso" aria-valuemin="0" aria-valuemax="100">
+                <div id="flashBar" class="progress-bar progress-bar-striped" style="width:0%"></div>
+              </div>
+            </div>
+
+            <div class="d-flex justify-content-between align-items-center">
+              <small class="text-secondary">Instalador por Web Serial</small>
+              <esp-web-install-button id="flashBtn" class="btn btn-main" style="visibility:hidden"></esp-web-install-button>
+            </div>
+
+            <div class="console mt-3" id="flashLog"></div>
+          </div>
         </div>
+      </div>
     </div>
+
+    <!-- =======================
+         TAB 2: Configurar WiFi
+         ======================= -->
+    <div class="tab-pane fade" id="tab-wifi">
+      <div class="row justify-content-center">
+        <div class="col-lg-5 col-md-7">
+          <div class="card-custom text-center shadow-lg">
+            <div class="wifi-icon"><i class="bi bi-wifi"></i></div>
+            <h4>Configurador Universal WiFi</h4>
+            <p class="text-secondary">Compatible con ESP32, ESP32-C3 y ESP8266</p>
+
+            <div class="mb-3 text-start">
+              <label class="form-label">Seleccionar dispositivo</label>
+              <select id="wifiDeviceSelect" class="form-control">
+                <option value="" selected disabled>Elegir opción…</option>
+                <option value="esp32">ESP32</option>
+                <option value="c3">ESP32-C3 Super Mini</option>
+                <option value="8266">ESP8266</option>
+              </select>
+            </div>
+
+            <button id="wifiConnect" class="btn btn-main w-100 mb-3">Conectar al dispositivo (Serial)</button>
+
+            <div class="d-flex align-items-center justify-content-between mb-2">
+              <span class="small text-secondary">Estado WiFi del dispositivo:</span>
+              <span id="wifiStatus" class="badge rounded-pill bg-secondary">Sin puerto</span>
+            </div>
+            <button id="probe" class="btn btn-outline-light w-100 mb-3" disabled>Probar estado</button>
+
+            <div id="wifiFormArea"></div>
+
+            <hr class="my-4" style="border-color:#3b3270;">
+            <h6 class="text-start">Salida del dispositivo</h6>
+            <div id="wifiLog" class="console"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 
 <script>
-const deviceSelect = document.getElementById('deviceSelect');
-const formArea = document.getElementById('formArea');
-const logBox = document.getElementById('log');
+/* ============================================================
+   TAB 1: Flasheo con binarios predefinidos (sin subir archivos)
+   ============================================================ */
 
-const log = t => {
-    logBox.textContent += t + "\n";
-    logBox.scrollTop = logBox.scrollHeight;
+const FIRMWARE = {
+  esp8266: {
+    chipFamily: "ESP8266",
+    parts: [
+      { path: "firmware/esp8266/app.bin", offset: 0x00000 }
+    ]
+  },
+  esp32: {
+    chipFamily: "ESP32",
+    parts: [
+      { path: "firmware/esp32/bootloader.bin", offset: 0x01000 },
+      { path: "firmware/esp32/partitions.bin", offset: 0x08000 },
+      { path: "firmware/esp32/app.bin",        offset: 0x10000 }
+    ]
+  },
+  esp32c3: {
+    chipFamily: "ESP32-C3",
+    parts: [
+      { path: "firmware/esp32c3/bootloader.bin", offset: 0x01000 },
+      { path: "firmware/esp32c3/partitions.bin", offset: 0x08000 },
+      { path: "firmware/esp32c3/app.bin",        offset: 0x10000 }
+    ]
+  }
 };
 
-deviceSelect.addEventListener('change', () => {
-    const type = deviceSelect.value;
+const flashSel   = document.getElementById('flashDeviceSelect');
+const flashBtn   = document.getElementById('flashBtn');
+const flashBar   = document.getElementById('flashBar');
+const flashPct   = document.getElementById('flashPct');
+const flashLog   = document.getElementById('flashLog');
+const flashLbl   = document.getElementById('flashStatusLabel');
 
-    formArea.innerHTML = `
-        <div class="mb-3 text-start">
-            <label class="form-label">Nombre de red (SSID)</label>
-            <input id="ssid" class="form-control" placeholder="Ej. MiRedCasa">
-        </div>
+const logFlash = t => { flashLog.textContent += t + "\n"; flashLog.scrollTop = flashLog.scrollHeight; };
 
-        <div class="mb-3 text-start position-relative">
-            <label class="form-label">Contraseña</label>
-            <div class="input-group">
-                <input id="pass" class="form-control" type="password" placeholder="••••••••">
-                <span class="input-group-text eye-icon" id="togglePass">
-                    <i id="eyeIcon" class="bi bi-eye-slash"></i>
-                </span>
-            </div>
-        </div>
-
-        <button id="send" class="btn btn-main w-100 mb-3">
-            Enviar configuración a ${type.toUpperCase()}
-        </button>
-    `;
-
-    document.getElementById('send').addEventListener('click', sendConfig);
-
-    /* Mostrar/ocultar contraseña con íconos Bootstrap */
-    const toggle = document.getElementById('togglePass');
-    const eyeIcon = document.getElementById('eyeIcon');
-    const passInput = document.getElementById('pass');
-
-    toggle.addEventListener('click', () => {
-        if (passInput.type === "password") {
-            passInput.type = "text";
-            eyeIcon.classList.remove("bi-eye-slash");
-            eyeIcon.classList.add("bi-eye");
-        } else {
-            passInput.type = "password";
-            eyeIcon.classList.remove("bi-eye");
-            eyeIcon.classList.add("bi-eye-slash");
-        }
-    });
-});
-
-/* -------------------
-    Web Serial API
-------------------- */
-let port;
-
-
-document.getElementById('connect').addEventListener('click', async () => {
-    try {
-        // Evitar abrir 2 veces el puerto
-        if (port && port.readable) {
-            log("El puerto ya está abierto.");
-            return;
-        }
-
-        port = await navigator.serial.requestPort();
-        await port.open({ baudRate: 115200 });
-
-        log("Puerto abierto correctamente.");
-
-        const reader = port.readable.getReader();
-
-        (async () => {
-            try {
-                while (true) {
-                    const { value, done } = await reader.read();
-                    if (done) break;
-                    const text = new TextDecoder().decode(value);
-                    log("ESP: " + text);
-                }
-            } catch (e) {
-                log("Error lectura: " + e);
-            }
-        })();
-
-    } catch (e) {
-        log("Error al abrir el puerto: " + e);
-    }
-});
-
-
-async function sendConfig() {
-    const ssid = document.getElementById('ssid').value.trim();
-    const pass = document.getElementById('pass').value.trim();
-    const device = deviceSelect.value;
-
-    if (!port) return log("Debe conectarse al puerto primero.");
-    if (!ssid) return log("Debe ingresar un SSID.");
-    if (!device) return log("Debe seleccionar un dispositivo.");
-
-    const msg = `CONFIG_${device.toUpperCase()}:{"ssid":"${ssid}","pass":"${pass}"}\n`;
-
-    const writer = port.writable.getWriter();
-    await writer.write(new TextEncoder().encode(msg));
-    writer.releaseLock();
-
-    log(`Credenciales enviadas a ${device.toUpperCase()}.`);
+function setFlashProgress(pct, txt){
+  pct = Math.max(0, Math.min(100, Math.floor(pct)));
+  flashBar.style.width = pct + '%';
+  flashPct.textContent = pct + '%';
+  flashLbl.textContent = 'Estado: ' + (txt || '');
 }
-</script>
 
+function buildManifestURL(devKey){
+  const fw = FIRMWARE[devKey];
+  const manifest = { name:"WiFi Connector Firmware", version:"1.0.0", chipFamily:fw.chipFamily, parts:fw.parts };
+  const blob = new Blob([JSON.stringify(manifest, null, 2)], { type: 'application/json' });
+  return URL.createObjectURL(blob);
+}
+
+flashSel.addEventListener('change', () => {
+  const dev = flashSel.value;
+  if (!dev) { flashBtn.style.visibility='hidden'; return; }
+  const manifestUrl = buildManifestURL(dev);
+  flashBtn.setAttribute('manifest', manifestUrl);
+  flashBtn.style.visibility = 'visible';
+  setFlashProgress(0, 'listo para instalar (' + dev + ')');
+  logFlash('Manifest preparado para ' + dev + '. Pulsa “Install”.');
+});
+
+/* Intento de reflejar progreso local.
+   Nota: ESP-Web-Tools muestra su propia barra en un modal; estos
+   eventos pueden variar por versión. Si no llegan, dejamos modo indeterminado. */
+flashBtn.addEventListener('click', () => {
+  setFlashProgress(5, 'abriendo puerto…');
+  // modo indeterminado mientras el modal corre:
+  let step = 5;
+  const id = setInterval(() => {
+    step = (step >= 90) ? 20 : (step + 5);
+    setFlashProgress(step, 'flasheando (ver barra en la ventana)…');
+  }, 700);
+  // tratamos de detectar estados si el componente emite eventos:
+  const onSuccess = () => { clearInterval(id); setFlashProgress(100, 'completado ✅'); logFlash('Instalación finalizada con éxito.'); flashBtn.removeEventListener('success', onSuccess); };
+  const onError   = () => { clearInterval(id); setFlashProgress(0, 'error ❌'); logFlash('Error durante la instalación.'); flashBtn.removeEventListener('error', onError); };
+  flashBtn.addEventListener('success', onSuccess, { once:true });
+  flashBtn.addEventListener('error', onError, { once:true });
+});
+
+/* ============================================================
+   TAB 2: Configuración WiFi (tu vista robusta)
+   ============================================================ */
+
+const wifiDeviceSelect = document.getElementById('wifiDeviceSelect');
+const wifiFormArea     = document.getElementById('wifiFormArea');
+const wifiLog          = document.getElementById('wifiLog');
+const wifiStatusBadge  = document.getElementById('wifiStatus');
+const wifiProbeBtn     = document.getElementById('probe');
+const wifiConnectBtn   = document.getElementById('wifiConnect');
+
+const logWifi = t => { wifiLog.textContent += t + "\n"; wifiLog.scrollTop = wifiLog.scrollHeight; };
+
+function wifiSetStatus(kind, ip=null) {
+  const m = {
+    noport:     { cls:'bg-secondary',         txt:'Sin puerto' },
+    serial:     { cls:'bg-info',              txt:'Serial OK' },
+    connecting: { cls:'bg-warning text-dark', txt:'Conectando…' },
+    connected:  { cls:'bg-success',           txt: ip ? `Conectado (${ip})` : 'Conectado' },
+    error:      { cls:'bg-danger',            txt:'Error de conexión' },
+    restarting: { cls:'bg-dark',              txt:'Reiniciando…' },
+    ready:      { cls:'bg-primary',           txt:'Listo' },
+    config_sent:{ cls:'bg-primary',           txt:'Credenciales enviadas' }
+  };
+  const s = m[kind] || m.noport;
+  wifiStatusBadge.className = `badge rounded-pill ${s.cls}`;
+  wifiStatusBadge.textContent = s.txt;
+}
+wifiSetStatus('noport');
+
+wifiDeviceSelect.addEventListener('change', () => {
+  const dev = wifiDeviceSelect.value;
+  wifiFormArea.innerHTML = `
+    <div class="mb-3 text-start">
+      <label class="form-label">Nombre de red (SSID)</label>
+      <input id="ssid" class="form-control" placeholder="Ej. MiRedCasa">
+    </div>
+    <div class="mb-3 text-start position-relative">
+      <label class="form-label">Contraseña</label>
+      <div class="input-group">
+        <input id="pass" class="form-control" type="password" placeholder="••••••••">
+        <span class="input-group-text eye-icon" id="togglePass"><i id="eyeIcon" class="bi bi-eye-slash"></i></span>
+      </div>
+    </div>
+    <button id="wifiSend" class="btn btn-main w-100 mb-3">Enviar configuración a ${dev.toUpperCase()}</button>
+  `;
+  document.getElementById('wifiSend').addEventListener('click', wifiSendConfig);
+  const t = document.getElementById('togglePass'), eye=document.getElementById('eyeIcon'), p=document.getElementById('pass');
+  t.addEventListener('click', ()=>{ const isPwd=p.type==='password'; p.type=isPwd?'text':'password'; eye.classList.toggle('bi-eye', isPwd); eye.classList.toggle('bi-eye-slash', !isPwd); });
+});
+
+let wifiPort;
+function escapeJSON(s){ return s.replace(/\\/g,"\\\\").replace(/"/g,'\\"'); }
+function buildConfigCmd(device, ssid, pass){
+  return `CONFIG_${device.toUpperCase()}:{"ssid":"${escapeJSON(ssid)}","pass":"${escapeJSON(pass)}"}\n`;
+}
+async function wifiOpenReader(){
+  const decoder = new TextDecoder();
+  while (wifiPort && wifiPort.readable) {
+    const reader = wifiPort.readable.getReader();
+    try {
+      let buf = "";
+      for (;;) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buf += decoder.decode(value);
+        const lines = buf.split(/\r?\n/);
+        buf = lines.pop();
+        for (const ln of lines) wifiHandleLine(ln.trim());
+      }
+    } catch(e) {
+      const msg = String(e).toLowerCase();
+      if (msg.includes("framing")) { logWifi("Aviso: reinicio del ESP (framing). Reintentando lectura…"); await new Promise(r => setTimeout(r, 400)); }
+      else { logWifi("Error lectura: " + e); await new Promise(r => setTimeout(r, 400)); }
+    } finally { try { reader.releaseLock(); } catch{} }
+  }
+}
+function wifiHandleLine(line){
+  if (!line) return; logWifi("ESP: " + line);
+  if (line.startsWith("NET:OK")) { const m=line.match(/ip=([0-9.]+)/); wifiSetStatus('connected', m?m[1]:null); return; }
+  if (line.startsWith("NET:ERR")) { wifiSetStatus('error'); return; }
+  if (line.includes("[WIFI] Conectando")) wifiSetStatus('connecting');
+  if (line.includes("[WIFI] ERROR"))      wifiSetStatus('error');
+  if (line.includes("[READY]"))           wifiSetStatus('ready');
+  if (line.includes("Reiniciando"))       wifiSetStatus('restarting');
+  if (line.includes("[WIFI] IP:")) { const m=line.match(/IP:\s*([0-9.]+)/); wifiSetStatus('connected', m?m[1]:null); }
+  if (line.includes("[WIFI] Conectado") && !/IP:/.test(line)) wifiSetStatus('connected');
+}
+async function wifiWrite(s){
+  if (!wifiPort || !wifiPort.writable) return;
+  const w = wifiPort.writable.getWriter();
+  try { await w.write(new TextEncoder().encode(s)); } finally { try { w.releaseLock(); } catch{} }
+}
+function startStatusPolling(ms=2000, totalMs=30000){
+  let elapsed = 0;
+  const t = setInterval(() => {
+    if (!wifiPort) { clearInterval(t); return; }
+    wifiWrite("STATUS?\n"); elapsed += ms;
+    if (elapsed >= totalMs) clearInterval(t);
+  }, ms);
+}
+async function wifiSendConfig(){
+  const dev = wifiDeviceSelect.value;
+  const ssid = (document.getElementById('ssid')||{}).value?.trim()||"";
+  const pass = (document.getElementById('pass')||{}).value?.trim()||"";
+  if (!wifiPort)  return logWifi("Debe conectarse al puerto primero.");
+  if (!dev)       return logWifi("Debe seleccionar un dispositivo.");
+  if (!ssid)      return logWifi("Debe ingresar un SSID.");
+  const msg = buildConfigCmd(dev, ssid, pass);
+  await wifiWrite(msg);
+  logWifi(`Credenciales enviadas a ${dev.toUpperCase()}.`);
+  wifiSetStatus('config_sent'); startStatusPolling();
+}
+document.getElementById('probe').addEventListener('click', ()=>{ if (wifiPort) { wifiWrite("STATUS?\n"); logWifi("Host: STATUS?"); } });
+
+document.getElementById('wifiConnect').addEventListener('click', async ()=>{
+  if (!('serial' in navigator)) { logWifi("Tu navegador no soporta Web Serial API."); return; }
+  try{
+    if (wifiPort && wifiPort.readable) { logWifi("El puerto ya está abierto."); return; }
+    wifiPort = await navigator.serial.requestPort();
+    await wifiPort.open({ baudRate:115200, dataBits:8, stopBits:1, parity:"none", flowControl:"none", bufferSize:1024 });
+    logWifi("Puerto abierto correctamente."); wifiSetStatus('serial');
+    document.getElementById('probe').disabled = false;
+    wifiOpenReader(); setTimeout(()=>{ if (wifiPort){ wifiWrite("STATUS?\n"); logWifi("Host: STATUS?"); } }, 300);
+  }catch(e){ logWifi("Error al abrir el puerto: " + e); }
+});
+
+/* Bootstrap JS */
+</script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
