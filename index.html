@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Configurador WiFi para ESP</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<!-- Bootstrap -->
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
+<!-- Bootstrap Icons -->
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+
+<style>
+    body {
+        background: #0f0b28;
+        color: #fff;
+        font-family: "Segoe UI", sans-serif;
+    }
+
+    /* Ícono WiFi circular */
+    .wifi-icon {
+        width: 90px;
+        height: 90px;
+        border-radius: 50%;
+        background: #1a153f;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 20px auto;
+        border: 2px solid #322c61;
+    }
+    .wifi-icon i {
+        font-size: 45px;
+        color: #784DFF;
+    }
+
+    .card-custom {
+        background: #181335;
+        border: 1px solid #322c61;
+        border-radius: 18px;
+        padding: 25px;
+    }
+
+    #log {
+        background: #1a153f;
+        padding: 12px;
+        border-radius: 10px;
+        height: 180px;
+        overflow-y: auto;
+        white-space: pre-wrap;
+        border: 1px solid #31285f;
+        font-size: 0.9rem;
+    }
+
+    .btn-main {
+        background: #784DFF;
+        border: none;
+    }
+    .btn-main:hover {
+        background: #6e44f5;
+    }
+
+    .form-control {
+        background: #241c49;
+        border: 1px solid #3b3270;
+        color: #fff;
+    }
+    .form-control:focus {
+        background: #241c49;
+        border-color: #784DFF;
+        color: #fff;
+        box-shadow: 0 0 10px rgba(120, 77, 255, 0.4);
+    }
+
+    .eye-icon {
+        cursor: pointer;
+        user-select: none;
+    }
+</style>
+</head>
+
+<body>
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-5 col-md-7">
+
+            <div class="card-custom text-center shadow-lg">
+
+                <!-- Ícono de WiFi circular -->
+                <div class="wifi-icon">
+                    <i class="bi bi-wifi"></i>
+                </div>
+
+                <h4>Configurador Universal WiFi</h4>
+                <p class="text-secondary">Compatible con ESP32, ESP32-C3 y ESP8266</p>
+
+                <!-- Selector de dispositivo -->
+                <div class="mb-3 text-start">
+                    <label class="form-label">Seleccionar dispositivo</label>
+                    <select id="deviceSelect" class="form-control">
+                        <option value="" selected disabled>Elegir opción…</option>
+                        <option value="esp32">ESP32</option>
+                        <option value="c3">ESP32-C3 Super Mini</option>
+                        <option value="8266">ESP8266</option>
+                    </select>
+                </div>
+
+                <button id="connect" class="btn btn-main w-100 mb-3">
+                    Conectar al dispositivo (Serial)
+                </button>
+
+                <!-- Formulario dinámico -->
+                <div id="formArea"></div>
+
+                <hr class="my-4" style="border-color:#3b3270;">
+
+                <h6 class="text-start">Salida del dispositivo</h6>
+                <div id="log"></div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script>
+const deviceSelect = document.getElementById('deviceSelect');
+const formArea = document.getElementById('formArea');
+const logBox = document.getElementById('log');
+
+const log = t => {
+    logBox.textContent += t + "\n";
+    logBox.scrollTop = logBox.scrollHeight;
+};
+
+deviceSelect.addEventListener('change', () => {
+    const type = deviceSelect.value;
+
+    formArea.innerHTML = `
+        <div class="mb-3 text-start">
+            <label class="form-label">Nombre de red (SSID)</label>
+            <input id="ssid" class="form-control" placeholder="Ej. MiRedCasa">
+        </div>
+
+        <div class="mb-3 text-start position-relative">
+            <label class="form-label">Contraseña</label>
+            <div class="input-group">
+                <input id="pass" class="form-control" type="password" placeholder="••••••••">
+                <span class="input-group-text eye-icon" id="togglePass">
+                    <i id="eyeIcon" class="bi bi-eye-slash"></i>
+                </span>
+            </div>
+        </div>
+
+        <button id="send" class="btn btn-main w-100 mb-3">
+            Enviar configuración a ${type.toUpperCase()}
+        </button>
+    `;
+
+    document.getElementById('send').addEventListener('click', sendConfig);
+
+    /* Mostrar/ocultar contraseña con íconos Bootstrap */
+    const toggle = document.getElementById('togglePass');
+    const eyeIcon = document.getElementById('eyeIcon');
+    const passInput = document.getElementById('pass');
+
+    toggle.addEventListener('click', () => {
+        if (passInput.type === "password") {
+            passInput.type = "text";
+            eyeIcon.classList.remove("bi-eye-slash");
+            eyeIcon.classList.add("bi-eye");
+        } else {
+            passInput.type = "password";
+            eyeIcon.classList.remove("bi-eye");
+            eyeIcon.classList.add("bi-eye-slash");
+        }
+    });
+});
+
+/* -------------------
+    Web Serial API
+------------------- */
+let port;
+
+
+document.getElementById('connect').addEventListener('click', async () => {
+    try {
+        // Evitar abrir 2 veces el puerto
+        if (port && port.readable) {
+            log("El puerto ya está abierto.");
+            return;
+        }
+
+        port = await navigator.serial.requestPort();
+        await port.open({ baudRate: 115200 });
+
+        log("Puerto abierto correctamente.");
+
+        const reader = port.readable.getReader();
+
+        (async () => {
+            try {
+                while (true) {
+                    const { value, done } = await reader.read();
+                    if (done) break;
+                    const text = new TextDecoder().decode(value);
+                    log("ESP: " + text);
+                }
+            } catch (e) {
+                log("Error lectura: " + e);
+            }
+        })();
+
+    } catch (e) {
+        log("Error al abrir el puerto: " + e);
+    }
+});
+
+
+async function sendConfig() {
+    const ssid = document.getElementById('ssid').value.trim();
+    const pass = document.getElementById('pass').value.trim();
+    const device = deviceSelect.value;
+
+    if (!port) return log("Debe conectarse al puerto primero.");
+    if (!ssid) return log("Debe ingresar un SSID.");
+    if (!device) return log("Debe seleccionar un dispositivo.");
+
+    const msg = `CONFIG_${device.toUpperCase()}:{"ssid":"${ssid}","pass":"${pass}"}\n`;
+
+    const writer = port.writable.getWriter();
+    await writer.write(new TextEncoder().encode(msg));
+    writer.releaseLock();
+
+    log(`Credenciales enviadas a ${device.toUpperCase()}.`);
+}
+</script>
+
+</body>
+</html>
